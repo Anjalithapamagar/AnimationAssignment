@@ -1,6 +1,7 @@
 package com.mapd721.animationassignment
 
 import android.os.Bundle
+import android.view.VelocityTracker
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
@@ -8,6 +9,9 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.horizontalDrag
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -22,24 +26,31 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.mapd721.animationassignment.ui.theme.AnimationAssignmentTheme
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlin.math.absoluteValue
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,6 +63,7 @@ class MainActivity : ComponentActivity() {
                     composable("screen1") { Screen1() }
                     composable("screen2") { Screen2() }
                     composable("screen3") { Screen3() }
+                    composable("screen4") { Screen4() }
                 }
             }
         }
@@ -111,6 +123,11 @@ fun Screen2() {
 @Composable
 fun Screen3() {
     RememberInfiniteTransition()
+}
+
+@Composable
+fun Screen4() {
+    GestureBasedAnimation()
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -296,6 +313,106 @@ fun RememberInfiniteTransition() {
 }
 
 @Composable
+fun GestureBasedAnimation() {
+    var offsetX by remember { mutableStateOf(0f) }
+
+    val onDismissed = {
+        println("Item dismissed")
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .swipeToDismiss(onDismissed)
+            .background(Color.Gray)
+            .padding(16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Swipe me to dismiss",
+            modifier = Modifier.padding(16.dp)
+        )
+    }
+}
+
+fun Modifier.swipeToDismiss(
+    onDismissed: () -> Unit
+): Modifier = composed {
+    val offsetX = remember { Animatable(0f) }
+    pointerInput(Unit) {
+        val decay = splineBasedDecay<Float>(this)
+        coroutineScope {
+            while (true) {
+                val velocityTracker = androidx.compose.ui.input.pointer.util.VelocityTracker()
+                offsetX.stop()
+                awaitPointerEventScope {
+                    val pointerId = awaitFirstDown().id
+
+                    horizontalDrag(pointerId) { change ->
+                        launch {
+                            offsetX.snapTo(
+                                offsetX.value + change.positionChange().x
+                            )
+                        }
+                        velocityTracker.addPosition(
+                            change.uptimeMillis,
+                            change.position
+                        )
+                    }
+                }
+                val velocity = velocityTracker.calculateVelocity().x
+                val targetOffsetX = decay.calculateTargetValue(
+                    offsetX.value,
+                    velocity
+                )
+                offsetX.updateBounds(
+                    lowerBound = -size.width.toFloat(),
+                    upperBound = size.width.toFloat()
+                )
+                launch {
+                    if (targetOffsetX.absoluteValue <= size.width) {
+                        offsetX.animateTo(
+                            targetValue = 0f,
+                            initialVelocity = velocity
+                        )
+                    } else {
+                        offsetX.animateDecay(velocity, decay)
+                        onDismissed()
+                    }
+                }
+            }
+        }
+    }
+        .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+}
+
+/*
+@Composable
+fun GestureBasedAnimation() {
+    var sizeState by remember { mutableStateOf(SizeState.Small) }
+
+    val size by animateDpAsState(
+        targetValue = if (sizeState == SizeState.Small) 100.dp else 200.dp,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = ""
+    )
+
+    Box(
+        modifier = Modifier
+            .size(size)
+            .background(Color.Blue)
+            .clickable {
+                sizeState = if (sizeState == SizeState.Small) SizeState.Big else SizeState.Small
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = "Tap to Resize", color = Color.White)
+    }
+}
+
+enum class SizeState { Small, Big }
+ */
+
+@Composable
 fun MyApp() {
     val navController = rememberNavController()
 
@@ -304,6 +421,7 @@ fun MyApp() {
         composable("screen1") { Screen1() }
         composable("screen2") { Screen2() }
         composable("screen3") { Screen3() }
+        composable("screen4") { Screen4() }
     }
 }
 
