@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
                     composable("main") { MainScreen(navController) }
                     composable("screen1") { Screen1() }
                     composable("screen2") { Screen2() }
+                    composable("screen3") { Screen3() }
                 }
             }
         }
@@ -105,6 +106,11 @@ fun Screen1() {
 @Composable
 fun Screen2() {
     AnimatedVisibility()
+}
+
+@Composable
+fun Screen3() {
+    RememberInfiniteTransition()
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -208,12 +214,12 @@ fun AnimatedVisibility() {
                 }
                 transition.AnimatedContent { targetState ->
                     if (targetState) {
-                        Text(text = "Selected")
+                        Text(text = "It is good day to read this course.")
                     } else {
                         Icon(
                             imageVector = Icons.Default.Person,
                             contentDescription = "Person",
-                            modifier = Modifier.padding(vertical = 16.dp).align(Alignment.CenterHorizontally)
+                            modifier = Modifier.padding(vertical = 8.dp).align(Alignment.CenterHorizontally)
                         )
                     }
                 }
@@ -239,26 +245,53 @@ fun AnimatedVisibility() {
                 ) {
                     Text(
                         text = stringResource(id = R.string.student),
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .padding(vertical = 16.dp)
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
                     )
                 }
                 transition.AnimatedContent { targetState ->
                     if (targetState) {
-                        Text(text = "Selected", modifier = Modifier.align(Alignment.CenterHorizontally))
+                        Text(text = "This is Anjali Thapa Magar", modifier = Modifier.align(Alignment.CenterHorizontally))
                     } else {
                         Icon(
                             imageVector = Icons.Default.Info,
                             contentDescription = "Info",
-                            modifier = Modifier.padding(vertical = 16.dp).align(Alignment.CenterHorizontally)
+                            modifier = Modifier.padding(vertical = 8.dp).align(Alignment.CenterHorizontally)
                         )
                     }
                 }
             }
         }
+    }
+}
 
+@Composable
+fun RememberInfiniteTransition() {
+    val infiniteTransition = rememberInfiniteTransition(label = "")
 
+    val colors = listOf(Color.Red, Color.Magenta, Color.Green, Color.Blue, Color.Yellow, Color.Cyan, Color.Gray, Color.DarkGray, Color.Black)
+
+    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceEvenly) {
+        repeat(3) { rowIndex ->
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                repeat(3) { colIndex ->
+                    val colorIndex = rowIndex * 3 + colIndex
+                    val color = colors[colorIndex % colors.size]
+                    val animatedColor by infiniteTransition.animateColor(
+                        initialValue = color,
+                        targetValue = color.copy(alpha = 0.2f),
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(2000),
+                            repeatMode = RepeatMode.Reverse
+                        ), label = ""
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(100.dp)
+                            .background(animatedColor)
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -270,6 +303,7 @@ fun MyApp() {
         composable("main") { MainScreen(navController) }
         composable("screen1") { Screen1() }
         composable("screen2") { Screen2() }
+        composable("screen3") { Screen3() }
     }
 }
 
