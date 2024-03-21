@@ -5,13 +5,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
@@ -44,6 +50,7 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "main") {
                     composable("main") { MainScreen(navController) }
                     composable("screen1") { Screen1() }
+                    composable("screen2") { Screen2() }
                 }
             }
         }
@@ -95,6 +102,11 @@ fun Screen1() {
     AnimatedContent()
 }
 
+@Composable
+fun Screen2() {
+    AnimatedVisibility()
+}
+
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun AnimatedContent(){
@@ -119,7 +131,7 @@ fun AnimatedContent(){
                     .size(32.dp)
                     .clickable {
                         count++
-                        screenBackgroundColor= if (count % 2 == 0) Color.Blue else Color.Gray
+                        screenBackgroundColor = if (count % 2 == 0) Color.Blue else Color.Gray
                     }
             )
         }
@@ -156,6 +168,100 @@ fun AnimatedContent(){
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun AnimatedVisibility() {
+    var selected by remember { mutableStateOf(false) }
+    val transition = updateTransition(selected, label = "selected state")
+    val borderColor by transition.animateColor(label = "border color") { isSelected ->
+        if (isSelected) Color.Magenta else Color.Blue
+    }
+    val elevation by transition.animateDp(label = "elevation") { isSelected ->
+        if (isSelected) 10.dp else 2.dp
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = "Animation 2 Demo",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        Surface(
+            onClick = { selected = !selected },
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(2.dp, borderColor),
+            modifier = Modifier.fillMaxWidth(),
+            shadowElevation = elevation
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                transition.AnimatedVisibility(
+                    visible = { targetSelected -> targetSelected },
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    Text(text = "Welcome to MAPD721 course.")
+                }
+                transition.AnimatedContent { targetState ->
+                    if (targetState) {
+                        Text(text = "Selected")
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Person",
+                            modifier = Modifier.padding(vertical = 16.dp).align(Alignment.CenterHorizontally)
+                        )
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Surface(
+            onClick = { selected = !selected },
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(2.dp, borderColor),
+            modifier = Modifier.fillMaxWidth(),
+            shadowElevation = elevation
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.Center
+            ) {
+                transition.AnimatedVisibility(
+                    visible = { targetSelected -> targetSelected },
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.student),
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .padding(vertical = 16.dp)
+                    )
+                }
+                transition.AnimatedContent { targetState ->
+                    if (targetState) {
+                        Text(text = "Selected", modifier = Modifier.align(Alignment.CenterHorizontally))
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = "Info",
+                            modifier = Modifier.padding(vertical = 16.dp).align(Alignment.CenterHorizontally)
+                        )
+                    }
+                }
+            }
+        }
+
+
+    }
+}
+
 @Composable
 fun MyApp() {
     val navController = rememberNavController()
@@ -163,6 +269,7 @@ fun MyApp() {
     NavHost(navController = navController, startDestination = "main") {
         composable("main") { MainScreen(navController) }
         composable("screen1") { Screen1() }
+        composable("screen2") { Screen2() }
     }
 }
 
